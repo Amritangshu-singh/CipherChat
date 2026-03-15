@@ -9,6 +9,7 @@ from passlib.context import CryptContext
 from jose import jwt, JWTError
 from typing import Dict, Optional
 from datetime import datetime, timedelta
+import threading
 import secrets
 import os
 import smtplib
@@ -342,9 +343,6 @@ def request_otp(payload: OtpRequest):
     otp = str(secrets.randbelow(900000) + 100000)
     otp_store[user.username] = {
         "otp": otp,
-        "channel": channel,
-        "identifier": identifier,
-        "expires_at": (datetime.utcnow() + timedelta(minutes=OTP_EXPIRY_MINUTES)).isoformat()
     }
 
     delivery_mode = channel
@@ -593,6 +591,14 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
             ))
             db.commit()
             db.close()
+            def bootstrap_database():
+                try:
+                    Base.metadata.create_all(bind=engine)
+                    ensure_schema()
+                except Exception as err:
+                    # Do not crash process boot on transient DB/network issues in hosted environments.
+                    print(f"[DB-BOOTSTRAP] delayed init failed: {err}")
+
 
             message_payload = json.dumps({
                 "from": sender,
@@ -603,6 +609,10 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
             # Send to recipient if they are online
             if recipient and recipient in connected_clients:
                 await connected_clients[recipient].send_text(message_payload)
+            @app.on_event("startup")
+            def startup_bootstrap():
+                threading.Thread(target=bootstrap_database, daemon=True).start()
+
 
             # Echo back to sender so they see their own message
             await websocket.send_text(message_payload)
