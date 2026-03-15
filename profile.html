@@ -252,11 +252,16 @@ const API_BASE_URL = (localStorage.getItem('api_base_url') || window.location.or
 function apiUrl(path) {
   return API_BASE_URL + path;
 }
+function routePath(name) {
+  const onPages = window.location.hostname.endsWith('pages.dev');
+  const pagesMap = { auth: '/auth.html', chat: '/chat.html', profile: '/profile.html' };
+  return onPages ? pagesMap[name] : '/' + name;
+}
 let editMode = false;
 let profileImageData = '';
 
 if (!token || !myUsername) {
-  window.location.href = '/auth';
+  window.location.href = routePath('auth');
 }
 
 function initials(name) {
@@ -304,7 +309,7 @@ async function loadProfile() {
   try {
     const res = await fetch(apiUrl('/me'), { headers: { Authorization: 'Bearer ' + token } });
     if (!res.ok) {
-      window.location.href = '/auth';
+      window.location.href = routePath('auth');
       return;
     }
 
@@ -320,7 +325,7 @@ async function loadProfile() {
     setEditMode(false);
     setStatus('');
   } catch {
-    window.location.href = '/auth';
+    window.location.href = routePath('auth');
   }
 }
 
@@ -376,14 +381,14 @@ async function saveProfile() {
 }
 
 function goBackToChat() {
-  window.location.href = '/chat';
+  window.location.href = routePath('chat');
 }
 
 function logout() {
   const confirmed = window.confirm('Are you sure you want to log out?');
   if (!confirmed) return;
   localStorage.clear();
-  window.location.href = '/auth';
+  window.location.href = routePath('auth');
 }
 
 document.getElementById('photoInput').addEventListener('change', (event) => {

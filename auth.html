@@ -267,6 +267,12 @@ if (!localStorage.getItem('api_base_url') && window.location.hostname.endsWith('
 }
 const API_BASE_URL = (localStorage.getItem('api_base_url') || window.location.origin).replace(/\/$/, '');
 
+function routePath(name) {
+  const onPages = window.location.hostname.endsWith('pages.dev');
+  const pagesMap = { auth: '/auth.html', chat: '/chat.html', profile: '/profile.html' };
+  return onPages ? pagesMap[name] : '/' + name;
+}
+
 function apiUrl(path) {
   return API_BASE_URL + path;
 }
@@ -370,7 +376,7 @@ async function completeLogin(accessToken, username) {
   localStorage.setItem('username', username);
   await setupUserE2EE(username);
   showToast('Welcome back, ' + username + '!');
-  setTimeout(() => { window.location.href = '/chat'; }, 600);
+  setTimeout(() => { window.location.href = routePath('chat'); }, 600);
 }
 
 function switchTab(tab) {

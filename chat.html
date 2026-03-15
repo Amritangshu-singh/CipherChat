@@ -389,7 +389,13 @@ function wsUrl(path) {
   return `${protocol}//${base.host}${path}`;
 }
 
-if (!token || !myUsername) { window.location.href = '/auth'; }
+function routePath(name) {
+  const onPages = window.location.hostname.endsWith('pages.dev');
+  const pagesMap = { auth: '/auth.html', chat: '/chat.html', profile: '/profile.html' };
+  return onPages ? pagesMap[name] : '/' + name;
+}
+
+if (!token || !myUsername) { window.location.href = routePath('auth'); }
 
 document.getElementById('myBadge').textContent = myUsername;
 
@@ -478,7 +484,7 @@ function timeNow() {
 async function loadContacts() {
   try {
     const res = await fetch(apiUrl('/users'), { headers: { Authorization: 'Bearer ' + token } });
-    if (!res.ok) { window.location.href = '/auth'; return; }
+    if (!res.ok) { window.location.href = routePath('auth'); return; }
     const users = await res.json();
     allContacts = users.map(u => ({
       ...u,
@@ -675,11 +681,11 @@ function logout() {
   const confirmed = window.confirm('Are you sure you want to log out?');
   if (!confirmed) return;
   localStorage.clear();
-  window.location.href = '/auth';
+  window.location.href = routePath('auth');
 }
 
 function openProfile() {
-  window.location.href = '/profile';
+  window.location.href = routePath('profile');
 }
 
 // ===== INIT =====
