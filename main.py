@@ -88,10 +88,6 @@ class Message(Base):
     ciphertext = Column(Text)
     iv = Column(Text, default="")
 
-
-Base.metadata.create_all(bind=engine)
-
-
 def ensure_schema():
     # Keep existing local SQLite DBs compatible with the new profile image field.
     if not DATABASE_URL.startswith("sqlite"):
@@ -105,6 +101,20 @@ def ensure_schema():
 
 
 ensure_schema()
+
+
+def bootstrap_database():
+    try:
+        Base.metadata.create_all(bind=engine)
+        ensure_schema()
+    except Exception as err:
+        # Keep web process alive if database is temporarily unreachable.
+        print(f"[DB-BOOTSTRAP] skipped: {err}")
+
+
+@app.on_event("startup")
+def startup_bootstrap():
+    threading.Thread(target=bootstrap_database, daemon=True).start()
 
 # ======================
 # SECURITY
