@@ -277,6 +277,16 @@ function apiUrl(path) {
   return API_BASE_URL + path;
 }
 
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 function updateFormByMode() {
   const isRegister = mode === 'register';
   const usernameInput = document.getElementById('username');
@@ -361,11 +371,11 @@ async function setupUserE2EE(username) {
     localStorage.setItem('e2ee_private_key', JSON.stringify(privJwk));
     localStorage.setItem('e2ee_public_key', JSON.stringify(pubJwk));
 
-    await fetch(apiUrl('/public-key'), {
+    await fetchWithTimeout(apiUrl('/public-key'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, public_key_jwk: JSON.stringify(pubJwk) })
-    });
+    }, 12000);
   } catch (err) {
     console.warn('E2EE key generation failed:', err);
   }
@@ -430,11 +440,11 @@ async function handleSubmit(e) {
   try {
     if (mode === 'login') {
       if (!otpRequested) {
-        const res = await fetch(apiUrl('/request-otp'), {
+        const res = await fetchWithTimeout(apiUrl('/request-otp'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ channel: loginMethod === 'email' ? 'email' : 'phone', identifier })
-        });
+        }, 15000);
         const data = await res.json();
 
         if (!res.ok) {
@@ -453,11 +463,11 @@ async function handleSubmit(e) {
           showToast('OTP sent to your registered ' + (loginMethod === 'email' ? 'email' : 'mobile') + '.');
         }
       } else {
-        const res = await fetch(apiUrl('/verify-otp'), {
+        const res = await fetchWithTimeout(apiUrl('/verify-otp'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ channel: loginMethod === 'email' ? 'email' : 'phone', identifier, otp })
-        });
+        }, 15000);
         const data = await res.json();
 
         if (!res.ok) {
@@ -482,11 +492,11 @@ async function handleSubmit(e) {
         return;
       }
 
-      const res = await fetch(apiUrl('/register'), {
+      const res = await fetchWithTimeout(apiUrl('/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, phone, password })
-      });
+      }, 15000);
       const data = await res.json();
 
       if (!res.ok) {
@@ -501,7 +511,11 @@ async function handleSubmit(e) {
       setLoginMethod('email');
     }
   } catch (err) {
-    showToast('Network error. Please try again.', 'error');
+    if (err.name === 'AbortError') {
+      showToast('Server timed out. Please check backend database config.', 'error');
+    } else {
+      showToast('Network error. Please try again.', 'error');
+    }
   } finally {
     btn.classList.remove('loading');
   }
