@@ -1,0 +1,4 @@
+/ /auth 302
+/auth /auth.html 200
+/chat /chat.html 200
+/profile /profile.html 200

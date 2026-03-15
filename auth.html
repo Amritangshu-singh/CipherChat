@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CipherChat — Secure Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+  :root{
+    --bg-dark:#0b0d17;
+    --card-bg:rgba(255,255,255,0.04);
+    --card-border:rgba(255,255,255,0.08);
+    --accent:#6c63ff;
+    --accent-glow:rgba(108,99,255,0.35);
+    --accent2:#00d2ff;
+    --text-primary:#eaeaea;
+    --text-secondary:#8b8fa3;
+    --input-bg:rgba(255,255,255,0.06);
+    --input-border:rgba(255,255,255,0.1);
+    --danger:#ff4d6a;
+    --success:#00e676;
+  }
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--bg-dark);
+    display:flex;justify-content:center;align-items:center;
+    min-height:100vh;overflow:hidden;
+    color:var(--text-primary);
+  }
+
+  /* Animated gradient orbs */
+  .orb{
+    position:fixed;border-radius:50%;filter:blur(120px);opacity:.45;pointer-events:none;
+    animation:orbFloat 12s ease-in-out infinite alternate;
+  }
+  .orb-1{width:420px;height:420px;background:#6c63ff;top:-10%;left:-8%;}
+  .orb-2{width:380px;height:380px;background:#00d2ff;bottom:-12%;right:-6%;animation-delay:-6s;}
+  .orb-3{width:260px;height:260px;background:#ff4d6a;top:50%;left:55%;animation-delay:-3s;}
+  @keyframes orbFloat{
+    0%{transform:translate(0,0) scale(1);}
+    100%{transform:translate(40px,-30px) scale(1.12);}
+  }
+
+  /* Card */
+  .card{
+    position:relative;z-index:1;
+    width:420px;max-width:92vw;
+    background:var(--card-bg);
+    border:1px solid var(--card-border);
+    backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);
+    border-radius:24px;
+    padding:44px 36px 36px;
+    box-shadow:0 32px 80px rgba(0,0,0,.45),0 0 60px var(--accent-glow);
+    animation:cardIn .6s cubic-bezier(.22,1,.36,1);
+  }
+  @keyframes cardIn{0%{opacity:0;transform:translateY(30px) scale(.96);}100%{opacity:1;transform:none;}}
+
+  /* Logo area */
+  .logo{
+    display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:8px;
+  }
+  .logo svg{width:36px;height:36px;color:var(--accent);}
+  .logo h1{font-size:22px;font-weight:700;letter-spacing:-.4px;}
+  .logo h1 span{color:var(--accent);}
+  .subtitle{text-align:center;color:var(--text-secondary);font-size:13px;margin-bottom:32px;}
+
+  /* Tabs */
+  .tabs{display:flex;gap:4px;background:var(--input-bg);border-radius:12px;padding:4px;margin-bottom:28px;}
+  .tab{
+    flex:1;text-align:center;padding:10px 0;border-radius:10px;
+    font-size:14px;font-weight:600;cursor:pointer;transition:.25s;
+    color:var(--text-secondary);
+  }
+  .tab.active{background:var(--accent);color:#fff;box-shadow:0 4px 18px var(--accent-glow);}
+
+  /* Form fields */
+  .fields{display:flex;flex-direction:column;gap:14px;}
+  .field{position:relative;}
+  .field input{
+    width:100%;padding:14px 16px 14px 44px;
+    background:var(--input-bg);
+    border:1px solid var(--input-border);
+    border-radius:12px;color:var(--text-primary);
+    font-size:14px;font-family:inherit;
+    transition:border-color .25s,box-shadow .25s;
+    outline:none;
+  }
+  .field input::placeholder{color:var(--text-secondary);opacity:.7;}
+  .field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}
+  .field .icon{
+    position:absolute;left:14px;top:50%;transform:translateY(-50%);
+    color:var(--text-secondary);transition:color .25s;pointer-events:none;
+  }
+  .field input:focus~.icon{color:var(--accent);}
+
+  /* Slide-in extras */
+  .register-fields{
+    display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s ease,opacity .3s;opacity:0;
+  }
+  .register-fields.show{grid-template-rows:1fr;opacity:1;}
+  .register-fields .inner{overflow:hidden;display:flex;flex-direction:column;gap:14px;}
+
+  .login-method-wrap{
+    display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s ease,opacity .3s;opacity:0;
+  }
+  .login-method-wrap.show{grid-template-rows:1fr;opacity:1;}
+  .login-method-wrap .inner{overflow:hidden;display:flex;flex-direction:column;gap:14px;}
+  .method-tabs{display:flex;gap:4px;background:var(--input-bg);border-radius:10px;padding:4px;}
+  .method-tab{
+    flex:1;text-align:center;padding:8px 0;border-radius:8px;
+    font-size:12px;font-weight:600;cursor:pointer;transition:.25s;
+    color:var(--text-secondary);
+  }
+  .method-tab.active{background:rgba(108,99,255,0.24);color:#fff;}
+  .otp-hint{font-size:12px;color:var(--text-secondary);line-height:1.5;}
+
+  /* Submit */
+  .submit-btn{
+    width:100%;padding:14px;margin-top:8px;
+    background:linear-gradient(135deg,var(--accent),#8b5cf6);
+    color:#fff;border:none;border-radius:12px;
+    font-size:15px;font-weight:600;font-family:inherit;
+    cursor:pointer;transition:transform .15s,box-shadow .25s;
+    box-shadow:0 6px 24px var(--accent-glow);
+  }
+  .submit-btn:hover{transform:translateY(-1px);box-shadow:0 8px 30px var(--accent-glow);}
+  .submit-btn:active{transform:translateY(0);box-shadow:0 4px 16px var(--accent-glow);}
+
+  /* Toast */
+  .toast{
+    position:fixed;top:24px;right:24px;z-index:999;
+    padding:14px 22px;border-radius:12px;
+    font-size:14px;font-weight:500;font-family:inherit;
+    color:#fff;backdrop-filter:blur(12px);
+    transform:translateX(130%);transition:transform .35s cubic-bezier(.22,1,.36,1);
+    box-shadow:0 8px 32px rgba(0,0,0,.3);
+  }
+  .toast.show{transform:translateX(0);}
+  .toast.success{background:rgba(0,230,118,.18);border:1px solid rgba(0,230,118,.3);}
+  .toast.error{background:rgba(255,77,106,.18);border:1px solid rgba(255,77,106,.3);}
+
+  /* Shake */
+  @keyframes shake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-6px);}40%,80%{transform:translateX(6px);}}
+  .shake{animation:shake .4s;}
+
+  /* Loading spinner */
+  .submit-btn .spinner{
+    display:none;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);
+    border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;margin:0 auto;
+  }
+  .submit-btn.loading .spinner{display:block;}
+  .submit-btn.loading .btn-text{display:none;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* E2EE badge at bottom */
+  .e2ee-badge{
+    display:flex;align-items:center;gap:6px;justify-content:center;
+    margin-top:24px;color:var(--text-secondary);font-size:11px;
+  }
+  .e2ee-badge svg{width:14px;height:14px;color:var(--success);}
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div class="card" id="card">
+  <!-- Logo -->
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </svg>
+    <h1>Cipher<span>Chat</span></h1>
+  </div>
+  <p class="subtitle">End-to-end encrypted messaging</p>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" id="tab-login" onclick="switchTab('login')">Login</div>
+    <div class="tab" id="tab-register" onclick="switchTab('register')">Register</div>
+  </div>
+
+  <!-- Form -->
+  <form id="authForm" onsubmit="return handleSubmit(event)">
+    <div class="fields">
+
+      <!-- Register-only fields (animated slide) -->
+      <div class="register-fields" id="registerFields">
+        <div class="inner">
+          <div class="field">
+            <input type="email" id="email" placeholder="Email address" autocomplete="email">
+            <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          </div>
+          <div class="field">
+            <input type="tel" id="phone" placeholder="Phone number" autocomplete="tel">
+            <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.68 2.34a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.74.32 1.53.55 2.34.68A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Login-only fields -->
+      <div class="login-method-wrap show" id="loginFields">
+        <div class="inner">
+          <div class="method-tabs">
+            <div class="method-tab active" id="method-otp" onclick="setLoginMethod('email')">Email</div>
+            <div class="method-tab" id="method-password" onclick="setLoginMethod('phone')">Mobile</div>
+          </div>
+
+          <div class="field" id="identifierField">
+            <input type="text" id="identifier" placeholder="Email or phone number" autocomplete="username">
+            <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.68 2.34a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.74.32 1.53.55 2.34.68A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+
+          <div class="field" id="otpField" style="display:none;">
+            <input type="text" id="otp" placeholder="Enter 6-digit OTP" autocomplete="one-time-code" inputmode="numeric" maxlength="6">
+            <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+
+          <div class="otp-hint" id="otpHint">Use your registered email or phone to receive OTP and log in instantly.</div>
+        </div>
+      </div>
+
+      <!-- Shared fields -->
+      <div class="field" id="usernameField">
+        <input type="text" id="username" placeholder="Username" autocomplete="username" required>
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div class="field" id="passwordField">
+        <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
+        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">
+        <span class="btn-text">Login</span>
+        <div class="spinner"></div>
+      </button>
+    </div>
+  </form>
+
+  <div class="e2ee-badge">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    <span>Protected by end-to-end encryption</span>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast" id="toast"></div>
+
+<script>
+let mode = 'login';
+let loginMethod = 'email';
+let otpRequested = false;
+
+const apiParam = new URLSearchParams(window.location.search).get('api');
+if (apiParam) {
+  localStorage.setItem('api_base_url', apiParam.trim().replace(/\/$/, ''));
+}
+if (!localStorage.getItem('api_base_url') && window.location.hostname.endsWith('pages.dev')) {
+  const enteredApi = window.prompt('Enter your backend API URL (Render):', 'https://your-service.onrender.com');
+  if (enteredApi) {
+    localStorage.setItem('api_base_url', enteredApi.trim().replace(/\/$/, ''));
+  }
+}
+const API_BASE_URL = (localStorage.getItem('api_base_url') || window.location.origin).replace(/\/$/, '');
+
+function apiUrl(path) {
+  return API_BASE_URL + path;
+}
+
+function updateFormByMode() {
+  const isRegister = mode === 'register';
+  const usernameInput = document.getElementById('username');
+  const passwordInput = document.getElementById('password');
+  const identifierInput = document.getElementById('identifier');
+  const otpInput = document.getElementById('otp');
+
+  document.getElementById('registerFields').classList.toggle('show', isRegister);
+  document.getElementById('loginFields').classList.toggle('show', !isRegister);
+
+  if (isRegister) {
+    document.getElementById('usernameField').style.display = 'block';
+    document.getElementById('passwordField').style.display = 'block';
+    usernameInput.required = true;
+    passwordInput.required = true;
+    usernameInput.disabled = false;
+    passwordInput.disabled = false;
+    identifierInput.required = false;
+    otpInput.required = false;
+    identifierInput.disabled = true;
+    otpInput.disabled = true;
+    document.getElementById('submitBtn').querySelector('.btn-text').textContent = 'Create Account';
+  } else {
+    identifierInput.disabled = false;
+    setLoginMethod(loginMethod, true);
+  }
+}
+
+function setLoginMethod(method, skipReset = false) {
+  loginMethod = method;
+  const methodLabel = method === 'email' ? 'email' : 'phone';
+  const usernameInput = document.getElementById('username');
+  const passwordInput = document.getElementById('password');
+  const identifierInput = document.getElementById('identifier');
+  const otpInput = document.getElementById('otp');
+
+  document.getElementById('method-otp').textContent = 'Email';
+  document.getElementById('method-password').textContent = 'Mobile';
+  document.getElementById('method-otp').classList.toggle('active', method === 'email');
+  document.getElementById('method-password').classList.toggle('active', method === 'phone');
+
+  identifierInput.placeholder = method === 'email' ? 'Registered email address' : 'Registered mobile number';
+  document.getElementById('identifierField').style.display = 'block';
+  document.getElementById('otpField').style.display = otpRequested ? 'block' : 'none';
+  document.getElementById('usernameField').style.display = 'none';
+  document.getElementById('passwordField').style.display = 'none';
+
+  if (!skipReset) {
+    otpRequested = false;
+    document.getElementById('otp').value = '';
+    document.getElementById('identifier').value = '';
+    document.getElementById('otpField').style.display = 'none';
+  }
+
+  if (mode === 'login') {
+    usernameInput.required = false;
+    passwordInput.required = false;
+    usernameInput.disabled = true;
+    passwordInput.disabled = true;
+    identifierInput.required = false;
+    otpInput.required = false;
+    identifierInput.disabled = false;
+    otpInput.disabled = !otpRequested;
+  }
+
+  document.getElementById('otpHint').style.display = 'block';
+  document.getElementById('otpHint').textContent = `We will send OTP to your registered ${methodLabel}.`;
+  document.getElementById('submitBtn').querySelector('.btn-text').textContent =
+    otpRequested ? 'Verify OTP' : 'Send OTP';
+}
+
+async function setupUserE2EE(username) {
+  try {
+    const keyPair = await window.crypto.subtle.generateKey(
+      { name: 'ECDH', namedCurve: 'P-256' },
+      true,
+      ['deriveKey', 'deriveBits']
+    );
+    const pubJwk = await window.crypto.subtle.exportKey('jwk', keyPair.publicKey);
+    const privJwk = await window.crypto.subtle.exportKey('jwk', keyPair.privateKey);
+
+    localStorage.setItem('e2ee_private_key', JSON.stringify(privJwk));
+    localStorage.setItem('e2ee_public_key', JSON.stringify(pubJwk));
+
+    await fetch(apiUrl('/public-key'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, public_key_jwk: JSON.stringify(pubJwk) })
+    });
+  } catch (err) {
+    console.warn('E2EE key generation failed:', err);
+  }
+}
+
+async function completeLogin(accessToken, username) {
+  localStorage.setItem('token', accessToken);
+  localStorage.setItem('username', username);
+  await setupUserE2EE(username);
+  showToast('Welcome back, ' + username + '!');
+  setTimeout(() => { window.location.href = '/chat'; }, 600);
+}
+
+function switchTab(tab) {
+  mode = tab;
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  updateFormByMode();
+}
+
+function showToast(message, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = message;
+  t.className = 'toast ' + type;
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+async function handleSubmit(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  const card = document.getElementById('card');
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const identifier = document.getElementById('identifier').value.trim();
+  const otp = document.getElementById('otp').value.trim();
+
+  if (mode === 'register') {
+    if (!username || !password) {
+      card.classList.add('shake');
+      setTimeout(() => card.classList.remove('shake'), 400);
+      showToast('Please fill in all required fields', 'error');
+      return false;
+    }
+  } else {
+    if (!identifier) {
+      card.classList.add('shake');
+      setTimeout(() => card.classList.remove('shake'), 400);
+      showToast(`Please enter your registered ${loginMethod === 'email' ? 'email' : 'mobile number'}`, 'error');
+      return false;
+    }
+    if (otpRequested && otp.length !== 6) {
+      card.classList.add('shake');
+      setTimeout(() => card.classList.remove('shake'), 400);
+      showToast('Please enter a valid 6-digit OTP', 'error');
+      return false;
+    }
+  }
+
+  btn.classList.add('loading');
+
+  try {
+    if (mode === 'login') {
+      if (!otpRequested) {
+        const res = await fetch(apiUrl('/request-otp'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channel: loginMethod === 'email' ? 'email' : 'phone', identifier })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showToast(data.detail || 'Unable to send OTP', 'error');
+          card.classList.add('shake');
+          setTimeout(() => card.classList.remove('shake'), 400);
+          return;
+        }
+
+        otpRequested = true;
+        document.getElementById('otpField').style.display = 'block';
+        setLoginMethod(loginMethod, true);
+        if (data.delivery_mode === 'dev' && data.dev_otp) {
+          showToast('OTP service not configured. Use dev OTP: ' + data.dev_otp, 'error');
+        } else {
+          showToast('OTP sent to your registered ' + (loginMethod === 'email' ? 'email' : 'mobile') + '.');
+        }
+      } else {
+        const res = await fetch(apiUrl('/verify-otp'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channel: loginMethod === 'email' ? 'email' : 'phone', identifier, otp })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showToast(data.detail || 'OTP verification failed', 'error');
+          card.classList.add('shake');
+          setTimeout(() => card.classList.remove('shake'), 400);
+          return;
+        }
+
+        otpRequested = false;
+        await completeLogin(data.access_token, data.username);
+      }
+
+    } else {
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+
+      if (!email || !phone) {
+        card.classList.add('shake');
+        setTimeout(() => card.classList.remove('shake'), 400);
+        showToast('Please fill in all fields', 'error');
+        return;
+      }
+
+      const res = await fetch(apiUrl('/register'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, phone, password })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast(data.detail || 'Registration failed', 'error');
+        card.classList.add('shake');
+        setTimeout(() => card.classList.remove('shake'), 400);
+        return;
+      }
+
+      showToast('Account created! You can now login.');
+      switchTab('login');
+      setLoginMethod('email');
+    }
+  } catch (err) {
+    showToast('Network error. Please try again.', 'error');
+  } finally {
+    btn.classList.remove('loading');
+  }
+
+  return false;
+}
+
+updateFormByMode();
+</script>
+
+</body>
+</html>

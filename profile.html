@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CipherChat - Profile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg-deep:#0a0c14;
+  --panel:#0f1120;
+  --panel-border:rgba(255,255,255,0.08);
+  --accent:#6c63ff;
+  --accent-glow:rgba(108,99,255,0.28);
+  --text-primary:#e8eaf0;
+  --text-secondary:#7f869f;
+  --success:#00e676;
+  --danger:#ff4d6a;
+  --input-bg:rgba(255,255,255,0.04);
+}
+body{
+  min-height:100vh;
+  font-family:'Inter',system-ui,sans-serif;
+  background:
+    radial-gradient(circle at 15% 25%, rgba(108,99,255,.13), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(0,210,255,.1), transparent 40%),
+    var(--bg-deep);
+  color:var(--text-primary);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+.card{
+  width:100%;
+  max-width:520px;
+  background:var(--panel);
+  border:1px solid var(--panel-border);
+  border-radius:20px;
+  padding:28px;
+  box-shadow:0 24px 60px rgba(0,0,0,.45);
+}
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:22px;
+}
+.header h1{
+  font-size:22px;
+  letter-spacing:-0.3px;
+}
+.back-btn{
+  border:none;
+  border-radius:10px;
+  padding:8px 12px;
+  font-size:13px;
+  font-weight:600;
+  background:rgba(108,99,255,.15);
+  color:var(--accent);
+  cursor:pointer;
+}
+.profile-top{
+  display:flex;
+  align-items:flex-start;
+  gap:16px;
+  margin-bottom:20px;
+}
+.avatar{
+  width:76px;
+  height:76px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#6c63ff,#8b5cf6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:24px;
+  font-weight:700;
+  overflow:hidden;
+  flex-shrink:0;
+}
+.avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:none;
+}
+.name-wrap .name{
+  font-size:18px;
+  font-weight:700;
+}
+.name-wrap .status{
+  margin-top:2px;
+  font-size:12px;
+  color:var(--success);
+}
+.row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  border:1px solid var(--panel-border);
+  border-radius:12px;
+  padding:12px 14px;
+  margin-bottom:10px;
+}
+.label{
+  color:var(--text-secondary);
+  font-size:12px;
+}
+.value{
+  font-size:14px;
+  text-align:right;
+  word-break:break-all;
+}
+.photo-controls{
+  margin-top:10px;
+  display:flex;
+  gap:8px;
+}
+.small-btn{
+  border:none;
+  border-radius:10px;
+  padding:8px 10px;
+  font-size:12px;
+  font-weight:600;
+  cursor:pointer;
+}
+.small-btn.photo{background:rgba(108,99,255,.18);color:var(--accent);}
+.small-btn.remove{background:rgba(255,77,106,.14);color:var(--danger);}
+.form-grid{
+  margin-top:8px;
+}
+.input-row{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  border:1px solid var(--panel-border);
+  border-radius:12px;
+  padding:12px 14px;
+  margin-bottom:10px;
+}
+.input-row label{
+  color:var(--text-secondary);
+  font-size:12px;
+}
+.input-row input{
+  width:100%;
+  border:1px solid var(--panel-border);
+  border-radius:10px;
+  padding:10px 12px;
+  background:var(--input-bg);
+  color:var(--text-primary);
+  font-family:inherit;
+  font-size:14px;
+  outline:none;
+}
+.input-row input:disabled{
+  opacity:.7;
+}
+.status-text{
+  min-height:18px;
+  margin-top:6px;
+  font-size:12px;
+  color:var(--text-secondary);
+}
+.status-text.ok{color:var(--success);}
+.status-text.err{color:var(--danger);}
+.actions{
+  margin-top:16px;
+  display:flex;
+  gap:10px;
+}
+.action-btn{
+  flex:1;
+  border:none;
+  border-radius:12px;
+  padding:12px;
+  font-weight:600;
+  cursor:pointer;
+}
+.action-chat{background:rgba(108,99,255,.18);color:var(--accent);}
+.action-edit{background:rgba(255,255,255,.1);color:var(--text-primary);}
+.action-save{background:rgba(0,230,118,.16);color:var(--success);display:none;}
+.action-logout{background:rgba(255,77,106,.14);color:var(--danger);}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>Your Profile</h1>
+      <button class="back-btn" onclick="goBackToChat()">Back</button>
+    </div>
+
+    <div class="profile-top">
+      <div class="avatar" id="avatar">
+        <span id="avatarInitials">--</span>
+        <img id="avatarImage" alt="Profile picture">
+      </div>
+      <div class="name-wrap">
+        <div class="name" id="name">Loading...</div>
+        <div class="status">Online session active</div>
+        <div class="photo-controls">
+          <input type="file" id="photoInput" accept="image/*" style="display:none;">
+          <button class="small-btn photo" onclick="pickPhoto()" id="photoBtn">Add Photo</button>
+          <button class="small-btn remove" onclick="removePhoto()" id="removePhotoBtn" style="display:none;">Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="label">Username</div>
+      <div class="value" id="usernameVal">-</div>
+    </div>
+    <div class="form-grid">
+      <div class="input-row">
+        <label for="emailInput">Email</label>
+        <input id="emailInput" type="email" disabled>
+      </div>
+      <div class="input-row">
+        <label for="phoneInput">Phone</label>
+        <input id="phoneInput" type="text" disabled>
+      </div>
+    </div>
+    <div class="status-text" id="statusText"></div>
+
+    <div class="actions">
+      <button class="action-btn action-chat" onclick="goBackToChat()">Open Chat</button>
+      <button class="action-btn action-edit" id="editBtn" onclick="toggleEditMode()">Edit Details</button>
+      <button class="action-btn action-save" id="saveBtn" onclick="saveProfile()">Save Changes</button>
+      <button class="action-btn action-logout" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+<script>
+const token = localStorage.getItem('token');
+const myUsername = localStorage.getItem('username');
+
+const apiParam = new URLSearchParams(window.location.search).get('api');
+if (apiParam) {
+  localStorage.setItem('api_base_url', apiParam.trim().replace(/\/$/, ''));
+}
+if (!localStorage.getItem('api_base_url') && window.location.hostname.endsWith('pages.dev')) {
+  const enteredApi = window.prompt('Enter your backend API URL (Render):', 'https://your-service.onrender.com');
+  if (enteredApi) {
+    localStorage.setItem('api_base_url', enteredApi.trim().replace(/\/$/, ''));
+  }
+}
+const API_BASE_URL = (localStorage.getItem('api_base_url') || window.location.origin).replace(/\/$/, '');
+
+function apiUrl(path) {
+  return API_BASE_URL + path;
+}
+let editMode = false;
+let profileImageData = '';
+
+if (!token || !myUsername) {
+  window.location.href = '/auth';
+}
+
+function initials(name) {
+  return (name || '--').slice(0, 2).toUpperCase();
+}
+
+function setStatus(message, kind = '') {
+  const s = document.getElementById('statusText');
+  s.textContent = message;
+  s.className = 'status-text ' + kind;
+}
+
+function setAvatar(imageData) {
+  const initialsEl = document.getElementById('avatarInitials');
+  const imageEl = document.getElementById('avatarImage');
+  const photoBtn = document.getElementById('photoBtn');
+  const removeBtn = document.getElementById('removePhotoBtn');
+
+  if (imageData) {
+    imageEl.src = imageData;
+    imageEl.style.display = 'block';
+    initialsEl.style.display = 'none';
+    photoBtn.textContent = 'Change Photo';
+    removeBtn.style.display = editMode ? 'inline-block' : 'none';
+  } else {
+    imageEl.removeAttribute('src');
+    imageEl.style.display = 'none';
+    initialsEl.style.display = 'inline';
+    initialsEl.textContent = initials(myUsername);
+    photoBtn.textContent = 'Add Photo';
+    removeBtn.style.display = 'none';
+  }
+}
+
+function setEditMode(enabled) {
+  editMode = enabled;
+  document.getElementById('emailInput').disabled = !enabled;
+  document.getElementById('phoneInput').disabled = !enabled;
+  document.getElementById('editBtn').style.display = enabled ? 'none' : 'inline-block';
+  document.getElementById('saveBtn').style.display = enabled ? 'inline-block' : 'none';
+  document.getElementById('removePhotoBtn').style.display = enabled && profileImageData ? 'inline-block' : 'none';
+}
+
+async function loadProfile() {
+  try {
+    const res = await fetch(apiUrl('/me'), { headers: { Authorization: 'Bearer ' + token } });
+    if (!res.ok) {
+      window.location.href = '/auth';
+      return;
+    }
+
+    const me = await res.json();
+    profileImageData = me.profile_image || '';
+
+    document.getElementById('avatarInitials').textContent = initials(myUsername);
+    document.getElementById('name').textContent = myUsername;
+    document.getElementById('usernameVal').textContent = myUsername;
+    document.getElementById('emailInput').value = me.email || '';
+    document.getElementById('phoneInput').value = me.phone || '';
+    setAvatar(profileImageData);
+    setEditMode(false);
+    setStatus('');
+  } catch {
+    window.location.href = '/auth';
+  }
+}
+
+function pickPhoto() {
+  if (!editMode) {
+    setStatus('Click Edit Details first to change profile photo.', 'err');
+    return;
+  }
+  document.getElementById('photoInput').click();
+}
+
+function removePhoto() {
+  if (!editMode) return;
+  profileImageData = '';
+  setAvatar(profileImageData);
+  setStatus('Photo removed. Save changes to apply.', 'ok');
+}
+
+function toggleEditMode() {
+  setEditMode(true);
+  setStatus('Edit your email, phone, or profile photo, then save.', 'ok');
+}
+
+async function saveProfile() {
+  const email = document.getElementById('emailInput').value.trim();
+  const phone = document.getElementById('phoneInput').value.trim();
+
+  try {
+    const res = await fetch(apiUrl('/me'), {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + token
+      },
+      body: JSON.stringify({
+        email,
+        phone,
+        profile_image: profileImageData
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setStatus(data.detail || 'Profile update failed.', 'err');
+      return;
+    }
+
+    setEditMode(false);
+    setStatus('Profile updated successfully.', 'ok');
+  } catch {
+    setStatus('Unable to save profile right now.', 'err');
+  }
+}
+
+function goBackToChat() {
+  window.location.href = '/chat';
+}
+
+function logout() {
+  const confirmed = window.confirm('Are you sure you want to log out?');
+  if (!confirmed) return;
+  localStorage.clear();
+  window.location.href = '/auth';
+}
+
+document.getElementById('photoInput').addEventListener('change', (event) => {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    profileImageData = String(reader.result || '');
+    setAvatar(profileImageData);
+    setStatus('Photo updated. Save changes to apply.', 'ok');
+  };
+  reader.readAsDataURL(file);
+});
+
+loadProfile();
+</script>
+</body>
+</html>
